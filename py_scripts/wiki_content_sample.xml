@@ -1,0 +1,12 @@
+<wiki_page>
+<title>project-name-2016-11-17-WEEK46-4-0</title>
+<parent title="Releases"/>
+<text>h1. project-name-2016-11-17-WEEK46-4-0 
+
+|Added |packages/apps/JPInputGoogle |
+
+|_.GerritID |_.Subject |_.Submitter |_.Path |_.CommitID |
+|"90572":http://192.168.9.142/gerrit/90572 |Revert "Build prop of 2016-11-16-WEEK46-3-0" |email@ts.com |build |a6464da0f6d3e6a4afee395360a18b0d8aa33236 |
+|"90557":http://192.168.9.142/gerrit/90557 |修改热点问题：选择安全模式异常退出 |email@ts.com |packages/apps/Settings |5630ebfcba5ec98953a07b63e8f7623317491922 |
+|"90336":http://192.168.9.142/gerrit/90336 |修复热点名称输入中文字符时热点打开异常 |email@ts.com |packages/apps/Settings |17c4f6120d7211075fdd7e375b75e3baae99a050 |
+</text></wiki_page>
