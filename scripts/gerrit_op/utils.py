@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # _*_ coding=utf-8 _*_
 
-import time, datetime, os
+import time, datetime, os, sys
 import ConfigParser
 
 class utils:
@@ -9,7 +9,7 @@ class utils:
 
     def cfg_parser(self):
         cfg_parser = ConfigParser.ConfigParser()
-        cfg_parser.read("gerrit_query.cfg")
+        cfg_parser.read("gerrit_config.cfg")
         all_cfg = {}
         all_cfg['_gerrit_protocol'] = cfg_parser.get("gerrit", "GERRIT_PROTOCOL")
         all_cfg['_gerrit_ip'] = cfg_parser.get("gerrit", "GERRIT_IP")
@@ -19,6 +19,7 @@ class utils:
         all_cfg['_gerrit_http_pwd'] = cfg_parser.get("gerrit", "GERRIT_HTTP_PWD")
 
         all_cfg['_query_branch'] = cfg_parser.get("query", "BRANCHES")
+        all_cfg['_new_branch'] = cfg_parser.get("query", "NEW_BRANCH")  # 只有在创建新分支，这个选项才会有用
         all_cfg['_query_status'] = cfg_parser.get("query", "STATUS")
         all_cfg['_query_parentproject'] = cfg_parser.get("query", "PARENTPROJECT")
         all_cfg['_query_projects'] = cfg_parser.get("query", "PROJECTS")
@@ -29,6 +30,11 @@ class utils:
         all_cfg['_query_frequency'] = cfg_parser.get("query", "HTTP_QUERY_FREQUENCY")
         all_cfg['_out_items'] = cfg_parser.get("query", "OUT_ITEMS")
         return all_cfg
+
+    def print_error(self, msg, to_exit=True):
+        print msg
+        if to_exit:
+            sys.exit(-1)
 
     def readable_timestamp(self, timestamp):
         return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(timestamp)))
