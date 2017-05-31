@@ -1,0 +1,45 @@
+Author by tang_jiajia@163.com
+
+awk 是一种模式扫描和处理语言
+基本语法：
+  awk [option] 'pattern {action}' file...
+
+工作过程：
+  按行都去输入，对符合pattern的行，执行acion。pattern省略时，匹配任意字符串。当action省略时，默认执行'{print}'. pattern和action不可同时省略。
+
+标准选项(option):
+  -v 变量赋值选项：将一个值赋给一个变量，在程序开始前进行赋值
+     awk -v name='tangjiajia' 'BEGIN{printf "Name = %s\n", name}'
+     ==> Name=tangjiajia
+  -f 从file中读取awk指令
+
+两个特殊的pattern，BEGIN 和 END：
+  BEGIN对应的action组合成一个代码块，在任何输入开始前执行；
+  END对应的action组合成一个代码块，在所有输入处理完后执行；
+
+内建变量：
+  $0            当前记录（这个变量中存放着整个行的内容）
+  $1~$n         当前记录的第n个字段，字段间由FS分隔
+  FS            输入字段分隔符 默认是空格或Tab
+  NF            当前记录中的字段个数，就是有多少列
+  NR            已经读出的记录数，就是行号，从1开始，如果有多个文件话，这个值也是不断累加中。
+  FNR           当前记录数，与NR不同的是，这个值会是各个文件自己的行号
+  RS            输入的记录分隔符， 默认为换行符
+  OFS           输出字段分隔符， 默认也是空格
+  ORS           输出的记录分隔符，默认为换行符
+  FILENAME      当前输入文件的名字
+
+内建函数：
+  数学函数：
+    exp(expr)
+    int(expr)
+    sqrt(expr)
+  字符串函数：
+    length(str)
+    index(str, sub)
+    match(str, regex)
+    split(str, arr, regex)
+    sub(regex, sub, string)
+    substr(str, start, 1)
+    toupper(str)
+

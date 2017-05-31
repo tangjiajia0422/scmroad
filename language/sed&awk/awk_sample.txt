@@ -1,0 +1,63 @@
+Author by tang_jiajia@163.com
+
+示例：
+1. 计算所有的C文件，CPP文件和H文件的文件大小总和
+   ls -l  *.cpp *.c *.h | awk '{sum+=$5} END {print sum}'
+
+2. 过滤出用户是root，执行的命令包含"kworker"字符串
+   ps aux | awk '{if($1=="root" && $NF ~ /kworker/) print $0}'
+   或者
+   ps aux | awk '$1=="root" && $NF ~ /kworker/'          //这里省略了{action}默认执行print
+   ps aux | awk '$1=="root" && $NF ~ /kworker|mys/'
+   注意：$NF指的是最后一列，NF的值等于列数。~ 表示字符串中包含。|表示匹配的或
+
+3. 找出CPU占用率大于0的进程
+   ps aux | awk '$3>0 {print $0}'    //单独对任意列进行过滤
+   或者
+   ps aux | awk '{if($3>0) print $0}'
+   注意，第一种写法是用'pattern {action}'的形式，第二种则使用'{action}'在action中做判断
+     ps aux | awk '{if($3>0){print $0}else{print $1}}' //这是包含else的写法
+
+4. 输出倒数第三列
+   ps aux | rev | awk '{print $3}' | rev
+
+5. 输出第三列到最后一列
+   ps aux | awk '{for(i=3;i<=NF;i++){printf "%s ", $i}; printf "\n"}'
+   ps aux | awk '{$1=$2=$3=""; print $0}'
+   ps aux | awk '{for(i=4; i<NF; i++)printf "%s",$i OFS; if(NF) printf "%s",$NF; printf ORS}'
+
+6. 列出目录下size大于10字节的文件
+   ls -l * | awk 'BEGIN{printf "id name\n--------"}$5>10{print $5,$NF}END{print "--------"}'
+
+7. 匹配的模式pattern用逗号分隔，表示从匹配到的第一个模式开始一直匹配到第二个模式所在的行
+   awk '/^root/,/^sys/' /etc/passwd
+     root:x:0:0:root:/root:/bin/bash
+     daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+     bin:x:2:2:bin:/bin:/bin/sh
+     sys:x:3:3:sys:/dev:/bin/sh
+
+8. 三目操作符pattern1 ? pattern2 : pattern3，判断是否匹配pattern1，true则匹配pattern2，false则匹配pattern3
+   awk -F: '$3>500?/\/bin\/bash$/:$3==0 {print $0}' /etc/passwd
+     root:x:0:0:root:/root:/bin/bash
+     tangjiajia:x:1000:1000:tangjiajia,,,:/home/tangjiajia:/bin/bash
+
+9. 打印斐波那契数列前10位
+   cat list.awk
+   BEGIN{
+       $1=1
+       $2=1
+       OFS=","
+       for(i=3;i<=10;i++)
+       {
+           $i=$(i-2)+$(i-1)
+       }
+       print
+   }
+   awk -f list.awk    //-f表示从文件中读取awk指令
+      1,1,2,3,5,8,13,21,34,55
+
+10. 读取/etc/passwd, 显示用户名长度大于16位的行
+   awk -F: '{if(length($1)>=16)print}' /etc/passwd
+     tangjiajia:x:1000:1000:tangjiajia,,,:/home/tangjiajia:/bin/bash
+     guest-qTh0GJ:x:119:129:Guest,,,:/tmp/guest-qTh0GJ:/bin/bash
+
