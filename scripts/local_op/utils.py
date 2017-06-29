@@ -29,6 +29,9 @@ class utils:
                     self.print_error('错误: %s必须只能赋一个值!' % (_tmp))
                 else: all_cfg[_tmp] = _tmp_list[0]
 
+        first_verify_set("source", "SOURCE_STATIC_MANIFEST")
+        first_verify_set("source", "SOURCE_BASE_STATIC_MANIFEST")
+
         first_verify_set("source", "SOURCE_ABS_PATH", False)
         first_verify_set("source", "SOURCE_BRANCH")
         first_verify_set("source", "SOURCE_BASE_BRANCH", False)
@@ -65,7 +68,8 @@ class utils:
                         self.print_error('错误: 不能找到仓库: %s/%s，请在local.cfg中设置正确的SOURCE_ISOLATED_REPO' % (tmp_source_abs_path, _repo))
             else:
                 path_name_dic = manifest.get_path_name_dic()
-                all_cfg['SOURCE_ISOLATED_REPO'] = path_name_dic.keys()
+                #需要剔除掉manifest中path是'.'的仓库，这在路径处理的时候会出错
+                all_cfg['SOURCE_ISOLATED_REPO'] = [path_name_dic[x] if x == '.' else x for x in path_name_dic.keys()]
             all_cfg['PATCH_OUT_PATH'] = '%s/%s_%s_%s' % \
                   (tmp_source_abs_path, all_cfg['SOURCE_BASE_BRANCH'].replace('/', '_'), all_cfg['SOURCE_BRANCH'].replace('/', '_'), 'patch_out')
         return all_cfg
@@ -105,6 +109,18 @@ class utils:
             return _branch_result.strip()
         self.print_error('错误: %s不存在分支: %s' % (_path, branch_or_tag_name), willexit)
         return ''
+
+    def clean_empty_folders(self, _top_path):
+        if os.path.isdir(_top_path):
+            for p in os.listdir(_top_path):
+                d = os.path.join(_top_path, p)
+                if os.path.isdir(d):  
+                    clean_empty_folders(d)
+                elif os.path.isfile(d):
+                    if os.path.getsize(d) == 0:
+                        os.remove(d)
+        if not os.listdir(_top_path):
+            os.rmdir(_top_path)
 
 class shell:
     def __init__(self, _cmd):

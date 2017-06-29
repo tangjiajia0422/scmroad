@@ -28,8 +28,9 @@ class auto_clean:
                      (u'%H', self.target_backup_branch, self.target_backup_branch)
         for _path in self.src_needpatch_repo:
             _abs_path = '%s/%s' % (self.target_path, _path)
-            os.chdir(_abs_path)
-            shell(clean_cmd).call_shell(False, True)
+            if os.path.exists(_abs_path):
+                os.chdir(_abs_path)
+                shell(clean_cmd).call_shell(False, True)
         try:
             shutil.rmtree(self.src_patch_out)
         except:
