@@ -33,8 +33,12 @@ class utils:
         first_verify_set("source", "SOURCE_BASE_STATIC_MANIFEST")
 
         first_verify_set("source", "SOURCE_ABS_PATH", False)
-        first_verify_set("source", "SOURCE_BRANCH")
-        first_verify_set("source", "SOURCE_BASE_BRANCH", False)
+        if not all_cfg["SOURCE_STATIC_MANIFEST"]:
+            first_verify_set("source", "SOURCE_BRANCH")
+        else: all_cfg["SOURCE_BRANCH"] = all_cfg["SOURCE_STATIC_MANIFEST"].split('/')[-1]
+        if not all_cfg["SOURCE_BASE_STATIC_MANIFEST"]:
+            first_verify_set("source", "SOURCE_BASE_BRANCH", False)
+        else: all_cfg["SOURCE_BASE_BRANCH"] = all_cfg["SOURCE_BASE_STATIC_MANIFEST"].split('/')[-1]
 
         first_verify_set("target", "TARGET_ABS_PATH", False)
 
