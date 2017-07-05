@@ -62,10 +62,12 @@ class utils:
                 self.print_error('错误: 不能找到manifest文件: %s/%s' % (tmp_source_abs_path, '.repo/manifest.xml'))
 
             tmp_source_isolated_repo = all_cfg['SOURCE_ISOLATED_REPO']
+            tmp_source_isolated_repo = [x[:len(x)-1] if x.endswith('/') else x for x in tmp_source_isolated_repo]
             if tmp_source_isolated_repo and len(tmp_source_isolated_repo) > 0:  #SOURCE_ISOLATED_REPO不为空，忽略.repo/manifest.xml
                 for _repo in tmp_source_isolated_repo:
                     if not os.path.exists('%s/%s' % (tmp_source_abs_path, _repo)):
                         self.print_error('错误: 不能找到仓库: %s/%s，请在local.cfg中设置正确的SOURCE_ISOLATED_REPO' % (tmp_source_abs_path, _repo))
+                all_cfg['SOURCE_ISOLATED_REPO'] = tmp_source_isolated_repo
             else:
                 path_name_dic = manifest.get_path_name_dic()
                 #需要剔除掉manifest中path是'.'的仓库，这在路径处理的时候会出错

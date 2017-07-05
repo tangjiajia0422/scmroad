@@ -86,7 +86,7 @@ class src_patches:
         #删除patch_out下的空目录
         #self._utils.clean_empty_folders(self.src_patch_out)
 
-        print '需要手动检查生成patch的仓库有%s个:' % len(path_need_manually)
-        print path_need_manually
+        print '需要手动检查生成patch的仓库有%s个:' % len(set(path_need_manually))
+        print list(set(path_need_manually))
 
         print '生成patch结束，所有的patch在路径%s下:' % self.src_patch_out
