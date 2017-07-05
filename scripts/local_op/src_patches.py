@@ -72,7 +72,7 @@ class src_patches:
             _branch_diff_result, _, _ = shell(_get_branch_diff).call_shell(False, True)
             with open(_tmp_md) as f:
                 _all_sha1 = [x.rstrip('\n') for x in f.readlines()]
-                for i in range(len(_all_sha1)-1): # 去掉最后一个sha1，其不需要再生成patch
+                for i in range(len(_all_sha1)):
                    _format_patch_cmd = 'git format-patch -1 --start-number %s %s -o %s' % \
                                           (str(i+1), _all_sha1[i], _patch_out)
                    _patch_out_name, _, _ = shell(_format_patch_cmd).call_shell(True, False)
