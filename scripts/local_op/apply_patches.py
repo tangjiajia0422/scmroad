@@ -69,7 +69,7 @@ class apply_patches:
                         #既然出现过冲突，冲突也会在_patch_done_log文件中被标注为FAIL，但是下标不会变
                         #假设是第一个patch就有冲突，那么_patch_done_log第一行就是FAIL，那么第二次执行要从第二个(下标为1)
                         #假设第一个成功，第二个失败，那么再次执行就是从第三个开始(下标为2),和len(_done_patches)相等
-                        if len(_done_patches) < len(_all_patches):
+                        if len(_done_patches) <= len(_all_patches):
                             _all_patches = _all_patches[len(_done_patches):]
 
                         if len(_all_patches) == 0: #表示都已经cherry-pick过了，进入到下一个repo
@@ -90,7 +90,7 @@ class apply_patches:
                                         done_f.write('FAIL,%s%s' % (_line, u'\n'))
                                     self._utils.print_error('''
 错误: 仓库%s出现冲突:%s, 
-（如果你需要这个patch，那么先解决冲突，然后运行 "git am -A; git am --continue"）
+（如果你需要这个patch，那么先解决冲突，然后运行 "git add -A; git am --continue"）
 （如果你暂时不想解决冲突，请使用 "git am --skip" 跳过此补丁）
 （如果你不需要此patch，请使用 "git am --abort" 恢复原有分支）''' % (_abs_path, _line))
 
