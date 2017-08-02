@@ -16,6 +16,7 @@ char* const container_args[] = {"/bin/bash", NULL};
 int container_main(void* arg)
 {
   printf("Container - inside the container!\n");
+  sethostname("container", 10); //设置容器中的hostname
   /* 直接执行一个shell，以便我们观察这个进程空间里的资源是否被隔离了 */
   execv(container_args[0], container_args);
   printf("Something's worng!\n");
@@ -26,8 +27,9 @@ int main()
 {
   printf("Parent - start a container!\n");
   /* 调用clone函数，其中传出一个函数，还有一个栈空间(为什么传尾指针，因为栈是反着的) */
-  int container_pid = clone(container_main, container_stack+STACK_SIZE, SIGCHLD, NULL);
-  /* 等待子进程结束 */
+  int container_pid = clone(container_main, container_stack+STACK_SIZE, 
+                            CLONE_NEWUTS | SIGCHLD, NULL); //启用 CLONE_NEWUTS Namespace隔离
+  /* 在父进程结束前，等待子进程结束 */
   while (waitpid(container_pid, NULL, 0) < 0 && errno == EINTR)
   {
     continue;
