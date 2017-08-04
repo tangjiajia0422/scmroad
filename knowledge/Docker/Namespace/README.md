@@ -79,4 +79,29 @@ init进程还会检查所有进程状态: 比如某个子进程脱离了父进�
 所以隔离还需要对文件系统进行隔离
 
 ## Mount Namespace
+1. 需要一个rootfs，也就是需要把待做的镜像中的那些命令copy到一个rootfs目录下，模仿Linux构建如下目录：
+```bash
+tangjiajia@localhost:$ ~/scmroad/knowledge/Docker/Namespace/rootfs$ ls
+bin  dev  etc  home  lib  lib64  mnt  opt  proc  root  sbin  sys  tmp  usr  var
+```
 
+2. 使用ldd找出放在bin 和 usr/bin下的文件所依赖的库
+```bash
+: ~/scmroad/knowledge/Docker/Namespace/rootfs$ ls bin/
+bash  chgrp  chown  echo  gzip      ip    less  ls    mount       mv  netstat  ps   rm   sh     tar    umount  which
+cat   chmod  cp     grep  hostname  kill  ln    more  mountpoint  nc  ping     pwd  sed  sleep  touch  uname
+
+: ~/scmroad/knowledge/Docker/Namespace/rootfs$ ls usr/bin/
+awk  env  groups  head  id  mesg  sort  strace  tabs  tac  tail  test  toe  top  tty  uniq  vi  wc  xargs
+
+: ~/scmroad/knowledge/Docker/Namespace/rootfs$ file bin/* | grep 'ELF.*executable' | awk -F ':' '{print $1}' | xargs ldd | grep -E '/lib|/lib64' | grep '=>'  | awk '{print $3}' | sort -u | xargs -I {} cp {} lib/x86_64-linux-gnu
+
+: ~/scmroad/knowledge/Docker/Namespace/rootfs$ file usr/bin/* | grep 'ELF.*executable' | awk -F ':' '{print $1}' | xargs ldd | grep -E '/lib|/lib64' | grep '=>'  | awk '{print $3}' | sort -u | xargs -I {} cp {} lib/x86_64-linux-gnu
+```
+
+3. 依赖的配置文件
+```bash
+: ~/scmroad/knowledge/Docker/Namespace/rootfs$ ls etc/
+bash.bashrc  group  hostname  hosts  ld.so.cache  nsswitch.conf  passwd  profile  resolv.conf  shadow
+```
+我靠，这些配置文件都是从/etc下复制过来的。可这是写死的，我们期望能够在容器启动的时候设置。那么可以在rootfs同级目录再创建一个conf目录，把关键配置文件放在这个目录下，这样父进程就可以动态根据配置文件来设置容器，再mount进容器，这样就灵活多了.
