@@ -76,7 +76,7 @@ I am a vegetable
 
 ## 运行docker后
 
-在Docker执行起来后(docker run -it ubuntu /bin/bash)，尅从/sys/fs/aufs/si\_**id**目录下查看aufso 的mount情况
+在Docker执行起来后(docker run -it ubuntu /bin/bash)，可以从/sys/fs/aufs/si\_**id**目录下查看aufso 的mount情况
 只有顶层(branch)是rw权限，其他都是ro+wh权限只读
 
 ## AUFS的特性
@@ -89,9 +89,9 @@ AUFS有所有UnionFS的特性，把多个目录合并成同一个目录，并可
 * rr表示real-read-only，与readonly不同，rr标记的是天生就是只读的分支，这样，AUFS可以提高性能，比如不再设置inotify来检查文件变动通知。
 > **什么是whiteout?**
 > 一般来说ro的分支都会有wh的属性，比如"[dir]=ro+wh"。所谓的whiteout的意思，如果在union中删除某个文件，实际上是位于一个readonly的分支(目录)上，那么在mount的union这个目录中将看不到这个文件，但是readonly这个层上我们无法做任何修改，所以我们就需要对这个readonly的目录里文件做whiteout。AUFS的whiteout的实现是通过在上层的可写的目录下建立对应的whiteout隐藏文件来实现的
-> 示例：
-> ```bash
-> $ tree
+示例：
+```bash
+$ tree
 .
 ├── fruits
 │   ├── apple
@@ -100,20 +100,21 @@ AUFS有所有UnionFS的特性，把多个目录合并成同一个目录，并可
 └── vegetables
     ├── carrots
     └── tomato
-> $ mount -t aufs -o dirs=./test=rw:./fruits=ro:./vegetables=ro none ./mnt1
-> $ ls ./mnt1
-> # 在权限为rw的test目录下新建一个whiteout的隐藏文件.wh.apple就会发现./mnt1/apple这个文件消失了
-> $ touch ./test/.wh.apple //这个操作和rm ./mnt1/apple是一样的
-> $ ls ./mnt1
+$ mount -t aufs -o dirs=./test=rw:./fruits=ro:./vegetables=ro none ./mnt1
+$ ls ./mnt1
+# 在权限为rw的test目录下新建一个whiteout的隐藏文件.wh.apple就会发现./mnt1/apple这个文件消失了
+$ touch ./test/.wh.apple //这个操作和rm ./mnt1/apple是一样的
+$ ls ./mnt1
 carrots  tomato
-> ```
+```
 
 ## 术语
 
 **Branch** - 就是各个要被union起来的目录(就是上面使用的dirs的命令行参数)
 * Branch根据被union的顺序形成一个stack，一版来说最上面是可写的，下面都是只读的
 * Branch的stack可以在被mount后进行修改，比如修改吮吸，加入新的branch，或者删除其中的branch，亦或者直接修改branch的权限
-** Whiteout 和 Opaque
+
+**Whiteout** 和 **Opaque**
 * 如果UnionFS中的某个目录被删除了，那么就应该不可见了，就算是在底层的branch中还有这个目录，那也应该不可见了。
 * Whiteout就是某个上层目录覆盖了下层的相同名字的目录。用于隐藏低层分支的文件，也用于阻止readdir进入低层分支。
 * Opaque的意思就是不允许任何下层的某个目录显示出来 
