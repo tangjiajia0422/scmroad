@@ -1,0 +1,20 @@
+SRCS := uts_namespace.c clone_simple.c ipc_namespace.c pid_namespace.c mount_namespace.c
+TARGETS := $(basename $(SRCS))
+
+define simple_build
+_src := $(1)
+_target := $(basename $(1))
+$$(_target) : $$(_src)
+	$(CC) $$^ -o $$@
+	@chmod +x $$@
+_src :=
+_target :=
+endef
+
+all: $(SRCS)
+	$(foreach ssrc, $(SRCS), $(info $(call simple_build,$(ssrc))))
+#$(foreach ssrc, $(SRCS), $(eval $(call simple_build,$(ssrc))))
+
+PHONY: clean
+clean:
+	rm -rf $(TARGETS)

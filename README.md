@@ -3,6 +3,6 @@
 
 ## FAQs
 
-* [Linux FAQ](FAQ_Linux.md)
-* [Android FAQ](FAQ_Android.md)
-* [Makefile FAQ](FAQ_Makefile.md)
+* [Linux FAQ](FAQs/FAQ_Linux.md)
+* [Android FAQ](FAQs/FAQ_Android.md)
+* [Makefile FAQ](FAQs/FAQ_Makefile.md)

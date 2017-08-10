@@ -1,26 +1,13 @@
-TARGETS = uts_namespace clone_simple ipc_namespace pid_namespace mount_namespace
+SRCS := uts_namespace.c clone_simple.c ipc_namespace.c pid_namespace.c mount_namespace.c
+TARGETS := $(basename $(SRCS))
+
+-include sub.make
 
 all: $(TARGETS)
-mount_namespace: mount_namespace.c
-	$(CC) $^ -o $@
-	@chmod +x $@
 
-pid_namespace: pid_namespace.c
-	$(CC) $^ -o $@
-	@chmod +x $@
-
-ipc_namespace: ipc_namespace.c
-	$(CC) $^ -o $@
-	@chmod +x $@
-
-uts_namespace: uts_namespace.c
-	$(CC) $^ -o $@
-	@chmod +x $@
-
-clone_simple: clone_simple1.c
-	$(CC) $< -o $@
-	@chmod +x $@
+sub.make: Makefile
+	$(foreach ssrc, $(SRCS), $(shell printf "$(basename $(ssrc)): $(ssrc)\n\t$(CC) $(ssrc) -o $(basename $(ssrc))\n\t@chmod +x $(basename $(ssrc))\n" >> $@))
 
 PHONY: clean
 clean:
-	rm -rf $(TARGETS)
+	rm -rf $(TARGETS) sub.make
