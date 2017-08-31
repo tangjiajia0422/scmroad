@@ -1,6 +1,8 @@
 # Scripts in use
 
-[tjj-common_func](#tjj-common_func)
+* [tjj-common_func](#tjj-common_func)
+* [tjj-confliter](#tjj-confliter)
+* [tjj-merge](#tjj-merge)
 
 ### <span id="tjj-common_func">tjj-common_func</span>
 
@@ -13,7 +15,9 @@ find_conflicts “conflict filelist file”       //找出具体的冲突发生�
 echo_array "${a[*]}"                          //输出数组每个元素
 ```
 
-### tjj-confliter(需要tjj-common_func和tjj-xlwt2xls.py)
+### <span id="tjj-confliter">tjj-confliter</span>
+
+> 需要tjj-common_func和tjj-xlwt2xls.py
 
 如何使用该脚本?
 * 该脚本是用来列出给定列表文件中各文件类型
@@ -27,7 +31,9 @@ echo_array "${a[*]}"                          //输出数组每个元素
 ```bash
 $0 -f '.git/MERGE_MSG' -k 'modem_proc' //默认冲突文件就是.git/MERGE_MSG，因此-f可以省
 ```
-### tjj-merge
+### <span id="tjj-merge">tjj-merge</span>
+
+> 需要tjj-common_func
 
 如何使用该脚本?
 * 该脚本是用来处理通用仓库在merge出现冲突后，也可以把当前目录下某些子文件夹回复成ours
