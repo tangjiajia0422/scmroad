@@ -29,7 +29,11 @@ echo_array "${a[*]}"                          //输出数组每个元素
 * non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012
 * 在只需要过滤出modem_proc目录下发生冲突的各文件类型，就可以这样使用:
 ```bash
-$0 -f '.git/MERGE_MSG' -k 'modem_proc' //默认冲突文件就是.git/MERGE_MSG，因此-f可以省
+#默认冲突文件就是.git/MERGE_MSG，因此-f可以省
+$0 -f '.git/MERGE_MSG' -k 'modem_proc'
+
+#如果需要将冲突输出到文件，则需要加上-d(detail)选项，默认输出文件是conflicts.xls
+$0 -f '.git/MERGE_MSG' -k 'modem_proc' -d 
 ```
 ### <span id="tjj-merge">tjj-merge</span>
 
