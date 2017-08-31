@@ -51,7 +51,7 @@ $0 -f '.git/MERGE_MSG' -k 'modem_proc' -d
 #branch_ours和branch_theirs都需要存在的branch，请检查branch前是否有remote前缀
 $0 -k 'modem_proc' -s 'branch_ours' -t 'branch_theirs'
 #-k省去，则所有目录都会回退到merge前的状态
-#-s省去，则使用HEAD。不省则会先执行 git checkout -f "branch_ours"
+#-s省去，则使用HEAD。不省则会先执行 git checkout -f "branch_ours"(暂不支持，请保持当前仓库clean)
 #-t不可省，这是需要merge的分支！
 ```
 
