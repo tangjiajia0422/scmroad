@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source tjj-common_func
+curpwd=$(pwd)
+curversion=$(basename ${curpwd})
+print_info "Flashing version >>> ${curversion}"
+
+if [ -f "${curpwd}/flash_all.sh" ]; then
+    chmod +x "${curpwd}/flash_all.sh"
+    sed -i 's#^fastboot#sudo /home/mi/workspace/android-sdk-linux/platform-tools/fastboot#g' "${curpwd}/flash_all.sh"
+    ${curpwd}/flash_all.sh
+else
+    print_error "Error: not found >>> ${curpwd}/flash_all.sh"
+fi

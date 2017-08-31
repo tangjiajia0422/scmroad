@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# Author by tangjiajia@xiaomi.com
+# 2017-8-23 Init
+# 2017-8-29 Bugfix for "new added files still exist" after `git checkout`
+# 
+# 如何使用该脚本?
+#   该脚本是用来处理non-hlos仓库在merge出现冲突后，把几个目录可以恢复回merge前
+#   该脚本并不会做git merge的操作，请自行merge后，再调用此脚本
+# 真实示例:
+#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012
+#   但只需要升级modem_proc这个目录，而其他目录还保留为MSM8996.LA.2.0.1.c4
+#   因此可以这样使用该脚本: $0 -k 'modem_proc'
+#
+
+source tjj-common_func
+curpwd=$(pwd)
+cd "${curpwd}"
+
+cur_head=$(git log -1 --format='%H')
+
+non_hlos_depth1="11ad_fw adsp_proc btfm_proc common cpe_proc rpm_proc trustzone_images about.html boot_images cnss_proc contents.xml modem_proc slpi_proc venus_proc"
+
+usage(){
+  print_info "#########################################"
+  print_info "# 如何使用该脚本?"
+  print_info "#   该脚本是用来处理non-hlos仓库在merge出现冲突后，把几个目录可以恢复回merge前"
+  print_info "#   该脚本并不会做git merge的操作，请自行merge后，再调用此脚本"
+  print_info "# 真实示例:"
+  print_info "#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012"
+  print_info "#   但只需要升级modem_proc这个目录，而其他目录还保留为MSM8996.LA.2.0.1.c4"
+  print_info "#   因此可以这样使用该脚本: $0 -k 'modem_proc'"
+  print_info "#########################################"
+  print_info "$0 -k 'actual_merge_folder_list'"
+  exit -1
+}
+
+while getopts 'k:' OPTION; do
+  case $OPTION in
+       k) #--The actual folder need to do merge
+	  actual_merge_folder=$OPTARG
+	  ;;
+       ?) usage
+	  ;;
+  esac
+done
+
+if [ ! -d ".git" ]; then
+  print_error "${curpwd} is not a git repository"
+  exit -1
+fi
+
+if [ ! -z "${actual_merge_folder}" ]; then
+  for _folder in $(echo "${actual_merge_folder}")
+  do
+    contains_element "${_folder}" "${non_hlos_depth1}"
+    if [ $? = 0 ]; then
+      non_hlos_depth1=${non_hlos_depth1//"${_folder}"/}
+    else
+      print_error "${_folder} can not be found in the merge repository!"
+      usage
+    fi
+  done
+fi
+
+print_info "Will reset to ${cru_head} for these folders: ${non_hlos_depth1}."
+
+for _folder in $(echo "${non_hlos_depth1}")
+do
+  # 需要把新增和替换的文件，从git中删除(git checkout默认不会回退这些文件，并且未曾被git管理过)
+  git diff --name-status --diff-filter=AR HEAD "${_folder}" | awk '{print $NF}' | while read line
+  do
+    if [ -e "${line}" ]; then
+      echo "rm new added file ${line}"
+      git rm -f "${line}"
+      sleep 0.1
+    fi	    
+  done
+  # End
+  print_info "git checkout ${cur_head} ${_folder}"
+  git checkout ${cur_head} "${_folder}"
+  sleep 0.1
+done
+

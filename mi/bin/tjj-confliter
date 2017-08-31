@@ -1,0 +1,146 @@
+#!/bin/bash
+#
+# 2017-8-23 Init version
+# 2017-8-29 Feature: 列出文件的详细冲突
+# 2017-8-30 Feature: 新增将冲突写入xls和纯文本文件中
+#
+# 如何使用该脚本?
+#   该脚本是用来列出给定列表文件中各文件类型
+#   在git merge发生冲突时尤其有用，.git/MERGE_MSG是默认文件
+#   提供关键字查询功能
+#   将冲突部分输出到文本文件和xls文件中
+# 真实示例:
+#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012
+#   在只需要过滤出modem_proc目录下发生冲突的各文件类型，就可以这样使用:
+#   $0 -f '.git/MERGE_MSG' -k 'modem_proc'
+#
+
+source tjj-common_func
+
+curpwd=$(pwd)
+cd "${curpwd}"
+
+script_path=$(readlink -f $0)
+n_path=$(dirname ${script_path})
+conflict_detail="False"
+conflict_detail_tmp_file="${curpwd}/.conflicts.detail"
+xls_file="${curpwd}/conflicts.xls"
+if [ -f "${conflict_detail_tmp_file}" ]; then
+  rm -f "${conflict_detail_tmp_file}"
+fi
+
+#检查python xlwt是否已经安装
+print_info ">>>>>> Start to check env"
+xlwt_v=$(python -c 'import xlwt; print xlwt.__VERSION__')
+if [ ! $? = 0 ]; then
+  print_error "请先按如下步骤安装python xlwt模块"
+  print_info "sudo apt-get install python-pip; sudo pip install xlwt"
+  exit -1
+fi
+#检查python xlrd是否已经安装
+xlrd_v=$(python -c 'import xlrd; print xlrd.__VERSION__')
+if [ ! $? = 0 ]; then
+  print_error "请先按如下步骤安装python xlrd模块"
+  print_info "sudo apt-get install python-pip; sudo pip install xlrd"
+  exit -1
+fi
+#检查python xlutils是否已经安装
+python -c 'import xlutils'
+if [ ! $? = 0 ]; then
+  print_error "请先按如下步骤安装python xlutils模块"
+  print_info "sudo apt-get install python-pip; sudo pip install xlutils"
+  exit -1
+fi
+print_info ">>>>>> Local env is OK!"
+print_info ">>>>>> xlwt version is ${xlwt_v}, xlrd version is ${xlrd_v}"
+
+usage(){
+  print_info "#########################################"
+  print_info "# 如何使用该脚本?"
+  print_info "#   该脚本是用来列出给定列表文件中各文件类型"
+  print_info "#   在git merge发生冲突时尤其有用，.git/MERGE_MSG是默认文件"
+  print_info "#   提供关键字查询功能"
+  print_info "# 真实示例:"
+  print_info "#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012"
+  print_info "#   在只需要过滤出modem_proc目录下发生冲突的各文件类型，就可以这样使用:"
+  print_info "#   $0 -f '.git/MERGE_MSG' -k 'modem_proc'"
+  print_info "#########################################"
+  print_info "$0 -f 'conflict_list_file' -k 'keyword'"
+  exit -1
+}
+
+while getopts 'f:k:d' OPTION; do
+case $OPTION in
+  f) #--The MERGE_MSG/conflict file
+     conflict_file=$OPTARG
+     ;;
+  k) #--The actual folder need to do merge
+     folder_keyword=$OPTARG
+     ;;
+  d) #--The actual folder need to do merge
+     conflict_detail="True"
+     ;;
+  ?) usage
+     ;;
+   esac
+done
+
+if [ -z "${conflict_file}" ]; then
+  print_info "未提供冲突列表文件，尝试读取默认冲突文件: ${curpwd}/.git/MERGE_MSG"
+  if [ -f "${curpwd}/.git/MERGE_MSG" ]; then
+    conflict_file="${curpwd}/.git/MERGE_MSG"
+  else
+    print_error "默认包含冲突文件 ${curpwd}/.git/MERGE_MSG 也不存在!"
+    usage
+  fi
+fi
+
+#tmp_file=/tmp/$(random_str)
+#grep -E "^#[[:blank:]]+.*${folder_keyword}" "${conflict_file}" | awk '{$1=""; print $0}' | sed 's/^ //g' | tee ${tmp_file} 1> /dev/null
+#python ${n_path}/tjj-confliter-file.py -f "${tmp_file}" -p "${curpwd}"
+#if [ -f "${tmp_file}" ]; then
+#  rm -f "${tmp_file}"
+#fi
+
+declare -a text_files
+declare -a binary_files
+declare -a not_exist_files
+i=0; j=0; k=0; m=0
+for _filename in $(grep -E "^#[[:blank:]]+.*${folder_keyword}" "${conflict_file}" | awk '{$1=""; print $0}' | sed 's/^ //g'); do
+  if [ -e "${_filename}" ]; then
+    if file "${_filename}" | grep -E 'ASCII text|text' 1>/dev/null; then
+      print_info "${_filename}"
+      text_files[i]="${_filename}"
+      result=$(find_conflicts "${_filename}")
+      let m=m+$?
+      if [ "${conflict_detail}" = "True" ]; then
+	echo -e "${result}" | tee "${conflict_detail_tmp_file}.${i}" | tee -a ${conflict_detail_tmp_file}
+	python ${n_path}/tjj-xlwt2xls.py -r "$i" -f "${_filename}" -i "${conflict_detail_tmp_file}.${i}" -o "${xls_file}"
+	rm -f "${conflict_detail_tmp_file}.${i}"
+      fi
+      let i++
+    else
+      binary_files[j]="${_filename}"
+      let j++
+    fi
+  else
+    not_exist_files[k]="${_filename}"
+    let k++
+    continue
+  fi
+done
+
+echo
+echo "############### $i ASCII files has $m times conflicts ##############"
+echo_array "${text_files[*]}"
+echo
+echo "######################## $j BINARY files ###########################"
+echo_array "${binary_files[*]}"
+echo
+echo "####################### $k files not found #########################"
+echo_array "${not_exist_files[*]}"
+if [ "${conflict_detail}" = "True" ]; then
+  echo
+  echo "######### Detailed conflicts: ${conflict_detail_tmp_file} ##########"
+  echo "######### xls detailed conflicts: ${xls_file} ##########"
+fi

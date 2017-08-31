@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+# Author by tangjiajia@xiaomi.com
+# 2017-8-23 Init
+# 2017-8-29 Bugfix for "new added files still exist" after `git checkout`
+# 
+# 如何使用该脚本?
+#   该脚本是用来处理通用仓库在merge出现冲突后，也可以把当前目录下某些子文件夹回复成ours
+#   该脚本会首先做git merge的操作，根据需求是否回退某些子目录
+# 真实示例:
+#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012
+#   但只需要升级modem_proc这个目录，而其他目录还保留为MSM8996.LA.2.0.1.c4
+#   因此可以这样使用该脚本: $0 -k 'modem_proc' -s 'branch_ours' -t 'branch_theirs'
+#
+
+source tjj-common_func
+curpwd=$(pwd)
+cd "${curpwd}"
+
+cur_head=$(git log -1 --format='%H')
+
+usage(){
+  print_info "#########################################"
+  print_info "# 如何使用该脚本?"
+  print_info "#   该脚本是用来处理通用仓库在merge出现冲突后，也可以把当前目录下某些子文件夹回复成ours"
+  print_info "#   该脚本会首先做git merge的操作，根据需求是否回退某些子目录"
+  print_info "# 真实示例:"
+  print_info "#   non-hlos需要从MSM8996.LA.2.0.1.c4 升级到 MSM8996.LA.2.0.1.c4-01012"
+  print_info "#   但只需要升级modem_proc这个目录，而其他目录还保留为MSM8996.LA.2.0.1.c4"
+  print_info "#   因此可以这样使用该脚本: $0 -k 'modem_proc' -s 'branch_ours' -t 'branch_theirs'"
+  print_info "#########################################"
+  print_info "$0 -k 'actual_merge_folder_list' -s 'branch_ours' -t 'branch_theirs'"
+  exit -1
+}
+
+while getopts 'k:s:t:' OPTION; do
+  case $OPTION in
+       k) #--指定真正要保留merge结果的目录，其他目录会被回退(为空则回退所有)
+	  actual_merge_folder=$OPTARG
+	  ;;
+       s) #--需要merge的分支(ours, 为空则默认是HEAD)
+          s_branch=$OPTARG
+	  ;;
+       t) #--需要被merge的分支(theirs)
+	  t_branch=$OPTARG
+	  ;;
+       ?) usage
+	  ;;
+  esac
+done
+
+if [ ! -d ".git" ]; then
+  print_error "${curpwd} is not a git repository"
+  exit -1
+fi
+
+#检查当前git是否是一个脏git
+git diff-index --quiet HEAD --
+if [ $? != 0 ]; then
+  print_error "${curpwd} 是一个脏git，需要先clean！"
+  print_info "如果在merge过程中，请使用 \$ git merge --abort"
+  print_info "如果是在其他冲突阶段，请使用 \$ git clean -dfx; git reset --hard"
+  print_info "如果你需要保存当前状态，请使用 \$ git stash OR \$ git add; git commit"
+  exit -1
+fi
+
+#检查是否存在输入分支
+if [ -z "${t_branch}" ]; then
+  print_error "必须要指定一个需要merge的分支名！"
+  usage
+fi
+
+#列出当前分支的文件列表
+s_filelist="$(ls | tr '\n' ' ')"
+echo "$s_filelist"
+
+#把正真需要保留merge结果的目录从文件列表中删除掉
+if [ ! -z "${actual_merge_folder}" ]; then
+  for _folder in $(echo "${actual_merge_folder}")
+  do
+    contains_element "${_folder}" "${s_filelist}"
+    if [ $? = 0 ]; then
+      s_filelist=${s_filelist//"${_folder}"/}
+    else
+      print_error "${_folder} can not be found in the merge repository!"
+      usage
+    fi
+  done
+fi
+
+#执行merge操作
+print_info "git merge ${t_branch}"
+git merge "${t_branch}"
+
+#把留下的目录全部回退掉
+print_info "Will reset to ${cur_head} for these folders: ${s_filelist}"
+for _folder in $(echo "${s_filelist}")
+do
+  # 需要把新增和替换的文件，从git中删除(git checkout默认不会回退这些文件，并且未曾被git管理过)
+  git diff --name-status --diff-filter=AR HEAD "${_folder}" | awk '{print $NF}' | while read line
+  do
+    if [ -e "${line}" ]; then
+      echo "rm new added file ${line}"
+      git rm -f "${line}"
+      sleep 0.1
+    fi	    
+  done
+  # End
+  print_info "git checkout ${cur_head} -- ${_folder}"
+  git checkout ${cur_head} -- ${_folder}
+  sleep 0.1
+done
+

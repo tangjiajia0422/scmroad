@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# Author by tangjiajia@xiaomi.com
+#
+# 2017-8-23 Init
+# 2017-8-30 func: find_conflicts 
+# 2017-8-31 在抽出的冲突行前，都加上行号
+#
+# Coding rule
+#   1. 所有基础方法中使用for循环的临时变量都需要加'_'前缀，(( _i=0; ))这样
+#
+print_error(){
+  echo -e "\e[1;31m$1\e[0m"
+}
+
+print_info(){
+  echo -e "\e[1;32m$1\e[0m"
+}
+
+contains_element(){
+  if [[ " $2 " =~ " $1 " ]]; then
+    return 0
+  fi
+  return -1
+}
+
+date_str(){
+  return $(date +%Y%m%d%H%M%S%N)
+}
+
+random_str(){
+  curdate=$(date +%Y%m%d%H%M%S%N)
+  echo "$curdate$RANDOM" | md5sum | cut -b -7
+}
+
+# 用来打印一个文件第m -> 第n行
+# $1起始行，$2终点行，$3输入文件
+print_m2n(){
+  sed -n "$1,$2"p $3
+}
+
+# 用来找出某个文件发生冲突的行
+# 可能会有多各冲突，但肯定是对称的
+find_conflicts(){
+  _c_start=($(grep -nE '^<<<<<<< HEAD' $1 | awk -F ':' '{print $1}'))
+  _c_mid=($(grep -nE '^=======$' $1 | awk -F ':' '{print $1}'))
+  _c_end=($(grep -nE '^>>>>>>> \w+[\/]{0,1}\w*' $1 | awk -F ':' '{print $1}'))
+  _len_c_start=${#_c_start[@]}
+  _len_c_mid=${#_c_mid[@]}
+  _len_c_end=${#_c_end[@]}
+  # 出现的冲突，必须是对称的
+  echo "$1"
+  if [ $_len_c_start -eq $_len_c_mid ] && [ $_len_c_start -eq $_len_c_end ]; then
+    for (( _i=0; _i<$_len_c_start; _i++ ))
+    do
+      _tmp_start_num=${_c_start[_i]}
+      _tmp_end_num=${_c_end[_i]}
+      # 显示行号
+      awk '{print NR,$0}' $1 | sed -n "${_tmp_start_num},${_tmp_end_num}"p
+    done
+    return $_len_c_start
+  else
+    print_error "$1文件中的冲突不对称! <<<:$_len_c_start; ===:$_len_c_mid; >>>:$_len_c_end"
+    return -100000
+  fi
+}
+
+# 数组作为参数传递给函数需要这样
+# 假设数组 a=('abc' 'dfe' 'abc')，那么使用这样的方式来传递数组`$0 "${a[*]}"`
+echo_array(){
+  _tmp_arr=$1
+  for _i in ${_tmp_arr[*]}; do
+    echo $_i
+  done
+}
