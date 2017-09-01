@@ -3,8 +3,8 @@
 
 ## FAQs
 
-* [Linux FAQ](FAQs/FAQ_linux.md)
-* [Android FAQ](FAQs/FAQ_android.md)
-* [Makefile FAQ](FAQs/FAQ_makefile.md)
-* [Bash FAQ](FAQs/FAQ_bash.md)
+* [linux FAQ](FAQs/FAQ_linux.md)
+* [android FAQ](FAQs/FAQ_android.md)
+* [makefile FAQ](FAQs/FAQ_makefile.md)
+* [bash FAQ](FAQs/FAQ_bash.md)
 * [vim FAQ](FAQs/FAQ_vim.md)

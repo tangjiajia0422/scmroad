@@ -2,7 +2,7 @@
 
 https://coolshell.cn/articles/11312.html
 
-=== 浏览目录模式
+### 浏览目录模式
 
 * 浏览文件
 > :E    (在所有的normal模式都可以使用)
@@ -14,7 +14,7 @@ https://coolshell.cn/articles/11312.html
 > s 对文件排序
 > x 执行文件
 
-=== 窗口分屏
+### 窗口分屏
 
 * 在shell时，vim直接参数即可分屏
 > vim -O{n} file1 file2 (大写的O表示垂直分屏, n一般和文件数相同)
@@ -34,7 +34,7 @@ https://coolshell.cn/articles/11312.html
 * 左右分割当前打开的文件
 > Ctrl+W v
 
-=== Tab页
+### Tab页
 
 分屏也可能不爽，更喜欢的是Chrome这样的分页浏览
 > :Te 全称是Texplorer  (新建一个tab页)
@@ -46,7 +46,7 @@ https://coolshell.cn/articles/11312.html
 在shell使用 vim 的 -p 参数可以以tab页的方式打开多个文件
 vim -p a1.cpp a2.cpp a3.cpp
 
-=== 常用技巧
+### 常用技巧
 
 * 字符相关
 > guu  (把一行文字变成全小写，Vu也可以)
