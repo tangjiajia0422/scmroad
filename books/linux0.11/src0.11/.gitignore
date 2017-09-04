@@ -1,0 +1,12 @@
+Thumbs.db
+*.log
+*.bak
+.DS_Store
+*.o
+*.a
+*.cfg
+tags
+cscope.*
+bochsout.txt
+*.orig
+*.rej
