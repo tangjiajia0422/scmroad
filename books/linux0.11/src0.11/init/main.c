@@ -20,8 +20,6 @@
  * won't be any messing with the stack from main(), but we define
  * some others too.
  */
-static inline int fork(void) __attribute__((always_inline));
-static inline int pause(void) __attribute__((always_inline));
 static inline _syscall0(int,fork)
 static inline _syscall0(int,pause)
 static inline _syscall1(int,setup,void *,BIOS)
@@ -109,7 +107,6 @@ void main(void)		/* This really IS void, no error here. */
  * Interrupts are still disabled. Do necessary setups, then
  * enable them
  */
-
  	ROOT_DEV = ORIG_ROOT_DEV;
  	drive_info = DRIVE_INFO;
 	memory_end = (1<<20) + (EXT_MEM_K<<10);

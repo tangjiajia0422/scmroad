@@ -155,7 +155,7 @@ repeat:
 #define copy_buffer(from,to) \
 __asm__("cld ; rep ; movsl" \
 	::"c" (BLOCK_SIZE/4),"S" ((long)(from)),"D" ((long)(to)) \
-	)
+	:"cx","di","si")
 
 static void setup_DMA(void)
 {
@@ -266,7 +266,7 @@ static void rw_interrupt(void)
 	do_fd_request();
 }
 
-static inline void setup_rw_floppy(void)
+inline void setup_rw_floppy(void)
 {
 	setup_DMA();
 	do_floppy = rw_interrupt;
@@ -365,7 +365,6 @@ static void recalibrate_floppy(void)
 	current_track = 0;
 	do_floppy = recal_interrupt;
 	output_byte(FD_RECALIBRATE);
-	current_drive = CURRENT_DEV;
 	output_byte(head<<2 | current_drive);
 	if (reset)
 		do_fd_request();

@@ -262,7 +262,263 @@ printk,vsprintf |         | traps.c      |  fork.c,sys.c,exit.c,signal.c| v系
 
 只有一个C程序math_emulate.c。其中math_emulate()函数是中断int7的中断处理程序调用C函数。当机器中没有数学协处理器，而CPU又执行了协处理器的指令时，就会引发该中断。因此该中断就是用软件来仿真协处理器功能
 
+#### 内科库函数lib
 
+内核库函数主要用于用户编程调用，是编译系统标准库的接口函数之一。共12个C文件。除了malloc.c较长外，其他程序都很短。
+* exit()     退出函数
+* close(fd)  关闭文件函数
+* dup()      复制文件描述符
+* open()     文件打开
+* write()    写文件函数
+* execve()   执行程序函数
+* malloc()   内存分配韩式
+* wait()     等待子进程状态函数
+* sedid()    创建会话系统
+* include/string.h  字符串操作函数
+
+#### 内存管理mm
+
+* page.s   包括内存页面异常中断(int14)处理程序，主要用于处理程序由于缺页而引起的页异常中断和访问非法地址而引起的页保护机制
+* memory.c 包括对内存进行初始化的函数mem_int()，由page.s的内存处理中断过程调用的do_no_page()和do_wp_page()函数。在创建新进程而执行复制进程操作时，即是哟呢该文件中的内存处理函数来分配管理内存空间
+
+#### 编译内核工具tools
+
+build.c程序用于将Linux各个目录中被分别编译生成的目标代码连接合并称一个可运行的内核映象文件image
+
+### Makefile 整体编译结构
+
+<pre>
+                   .------..----..----..--------.
+                   | head || fs || mm || kernel |
+                   '----\-''-|--''|---'/--------'
+                         \   |    |   / | main |
+                          \  |    |  /  '------'
+.----------.   .-------.  .v-v----v./    .-----.
+| bootsect |   | setup |  | system <-----| lib |
+'--------\-'   '--|----'  '/-------'     '-----'
+          \       |       /
+           \      |      /
+           .v-----v-----v-.
+           | kernel Image |
+           '--------------'
+         kernel build structure
+</pre>
+
+### Makefile注解
+
+<pre>
+#
+# if you want the ram-disk device, define this to be the
+# size in blocks.
+# 如果要使用RAM盘设备的话，就定义块的大小
+RAMDISK = #-DRAMDISK=512
+
+# 8086汇编编译器和连接器
+# -0生成8086目标程序;-a生成与gas和gld部分兼容的代码
+AS86	=as86 -0 -a
+LD86	=ld86 -0 
+
+# 这是GNU的汇编和连接器
+AS	=gas
+LD	=gld
+
+# gld用到的选项
+# -s输出文件中省略所有的符号信息
+# -x删除所有局部符号
+# -M需要在标准输出设备(显示器)上打印链接映象
+LDFLAGS	=-s -x -M
+
+# gcc是GNU C的程序编译器
+CC	=gcc $(RAMDISK)
+
+# gcc选项 -Wall打印所有警告信息; -O对代码进行优化;
+# -fstrength-reduce优化所有警告信息; -smstring-insns是Linus自己写的选项(可选)
+CFLAGS	=-Wall -O -fstrength-reduce -fomit-frame-pointer \
+-fcombine-regs -mstring-insns
+
+# cpp是gcc的预处理程序
+# -nostdinc -Iinclude表示不要搜索标准的头文件目录，而使用-I指定的目录或是当前目录下搜索头文件
+CPP	=cpp -nostdinc -Iinclude
+
+#
+# ROOT_DEV specifies the default root-device when making the image.
+# This can be either FLOPPY, /dev/xxxx or empty, in which case the
+# default of /dev/hd6 is used by 'build'.
+# ROOT_DEV是在创建内核映像image文件时所使用的默认根文件系统所在的设备。如果不定义在build程序(tools)下就默认使用/dev/hd6
+ROOT_DEV=/dev/hd6
+
+# kernel、mm、fs目录所产生的目标代码文件
+ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
+
+# 块和字符设备库文件。.a是静态库，包含多个可执行二进制代码子程序集合
+DRIVERS =kernel/blk_drv/blk_drv.a kernel/chr_drv/chr_drv.a
+
+# 数学运算库文件
+MATH	=kernel/math/math.a
+
+# 由libs目录中文件所编译生成的通用库文件
+LIBS	=lib/lib.a
+
+# make老式的隐藏后缀规则。(现在这种规则已经不用了，而是用更清晰的匹配规则)。如下是一种双后缀规则--用一对后缀定义的:源后缀和目标后缀
+# 利用如下命令将所有.c文件编译成.s文件
+# -nostdinc -Iinclude和上面一样，表示不使用标准头文件目录，而使用-I指定的
+# -S表示把.c编译成.s后就停止，不继续进行汇编了
+# -o表示其输出文件的形式
+.c.s:
+	$(CC) $(CFLAGS) \
+	-nostdinc -Iinclude -S -o $*.s $<
+
+# 使用gas将所有.s编译成.o目标文件，-c表示只编译或汇编，但不进行链接操作
+.s.o:
+	$(AS) -c -o $*.o $<
+
+# 使用gcc将C文件编译成目标文件但不链接
+.c.o:
+	$(CC) $(CFLAGS) \
+	-nostdinc -Iinclude -c -o $*.o $<
+
+# all表示Makefile所知的顶层目标，image文件
+all:	Image
+
+# Image依赖这4各文件，然后执行命令--用tools/build命令将bootsect、setup、system文件以ROOT_DEV为根文件系统设备组装称内核文件Image
+# sync命令是迫使缓冲块数据立即写盘并更新超级块
+Image: boot/bootsect boot/setup tools/system tools/build
+	tools/build boot/bootsect boot/setup tools/system $(ROOT_DEV) > Image
+	sync
+
+# disk目标依赖Image
+# dd是Unix标准命令：复制一个文件，并根据选项进行转换和格式化
+# bs=一次读写的字节数; if=输入的文件; of=输出的文件，这里的/dev/PS0指第一个软盘驱动器
+disk: Image
+	dd bs=8192 if=Image of=/dev/PS0
+
+# 生成tools/build可执行文件
+tools/build: tools/build.c
+	$(CC) $(CFLAGS) \
+	-o tools/build tools/build.c
+
+# 利用上面给的.s.o规则生成head.o目标文件
+boot/head.o: boot/head.s
+
+# tools/system的依赖
+# 生成system命令，并且gld把链接映像重定向放在System.map文件中
+tools/system:	boot/head.o init/main.o \
+		$(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)
+	$(LD) $(LDFLAGS) boot/head.o init/main.o \
+	$(ARCHIVES) \
+	$(DRIVERS) \
+	$(MATH) \
+	$(LIBS) \
+	-o tools/system > System.map
+
+# 数学协处理函数
+kernel/math/math.a:
+	(cd kernel/math; make)
+
+# 块设备函数blk_drv.a
+kernel/blk_drv/blk_drv.a:
+	(cd kernel/blk_drv; make)
+
+# 字符设备函数chr_drv.a
+kernel/chr_drv/chr_drv.a:
+	(cd kernel/chr_drv; make)
+
+# 内核目标kernel.o
+kernel/kernel.o:
+	(cd kernel; make)
+
+# 内存管理模块mm.o
+mm/mm.o:
+	(cd mm; make)
+
+# 文件系统模块fs.o
+fs/fs.o:
+	(cd fs; make)
+
+# 库函数lib.a
+lib/lib.a:
+	(cd lib; make)
+
+# 使用8086汇编和链接器对setup.s文件进行编译生成setup文件
+# -s表示要去除目标文件中的符号信息
+boot/setup: boot/setup.s
+	$(AS86) -o boot/setup.o boot/setup.s
+	$(LD86) -s -o boot/setup boot/setup.o
+
+# 同样使用8086汇编和连接器生成bootsect.o磁盘引导块
+boot/bootsect:	boot/bootsect.s
+	$(AS86) -o boot/bootsect.o boot/bootsect.s
+	$(LD86) -s -o boot/bootsect boot/bootsect.o
+
+# 在bootsect.s程序开头添加一行有关system文件长度信息
+# (实际长度 + 15) / 16 用于获得用'节'表示的长度信息。1节 = 16字节
+tmp.s:	boot/bootsect.s tools/system
+	(echo -n "SYSSIZE = (";ls -l tools/system | grep system \
+		| cut -c25-31 | tr '\012' ' '; echo "+ 15 ) / 16") > tmp.s
+	cat boot/bootsect.s >> tmp.s
+
+# 清除编译结果
+clean:
+	rm -f Image System.map tmp_make core boot/bootsect boot/setup
+	rm -f init/*.o tools/system tools/build boot/*.o
+	(cd mm;make clean)
+	(cd fs;make clean)
+	(cd kernel;make clean)
+	(cd lib;make clean)
+
+# 先执行clean规则，然后对liunx进行打包压缩。sync迫使缓冲数据立即写盘并更新磁盘超级块
+backup: clean
+	(cd .. ; tar cf - linux | compress - > backup.Z)
+	sync
+
+dep:
+	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
+	(for i in init/*.c;do echo -n "init/";$(CPP) -M $$i;done) >> tmp_make
+	cp tmp_make Makefile
+	(cd fs; make dep)
+	(cd kernel; make dep)
+	(cd mm; make dep)
+
+### Dependencies:
+init/main.o : init/main.c include/unistd.h include/sys/stat.h \
+  include/sys/types.h include/sys/times.h include/sys/utsname.h \
+  include/utime.h include/time.h include/linux/tty.h include/termios.h \
+  include/linux/sched.h include/linux/head.h include/linux/fs.h \
+  include/linux/mm.h include/signal.h include/asm/system.h include/asm/io.h \
+  include/stddef.h include/stdarg.h include/fcntl.h 
+
+</pre>
+
+#### as86, ld86简介
+
+as86和ld86是Intel8086的汇编和链接程序，它完全是一个8086的汇编编译器，却可以为386处理器编制32位的代码。Linux使用它仅仅是为了创建16位的启动扇区bootsector代码和setup二进制执行代码。该编译器的语法和GUN的汇编编译器语法是不兼容的
+
+#### System.map文件
+
+System.map文件用于存放内核符号表信息。符号表是所有符号及其对应地址的一个列表。每次编译产生的System.map都是全新的。当内核运行出错时，就可以通过System.map文件中的符号表解析，就可以查到一个地址值对应的变量名，反之亦可。
+
+符号表样例：
+
+<pre>
+c03441a0 B dmi_broken
+c03441a4 B is_sony_vaio_laptop
+c03441c0 b dmi_ident
+c0344200 b pci_bios_present
+c0344204 b pirq_table
+</pre>
+
+可以看到名为dmi_broken的变量位于内核地址c03441a0处
+
+System.map位于使用它的软件(内核日志记录后台程序klogd)能够寻找的地方。在系统启动时，如果没有以一个参数形式为klogd给出System.map的位置，则klogd将会在三个地方搜寻System.map
+* /boot/System.map
+* /System.map
+* /usr/src/linux/System.map
+
+尽管内核本身实际上不使用Syetem.map，但其他程序，象klogd，lsof，ps，dosemu都需要一个正确的Syetem.map文件。利用该文件，这些程序可以根据已知的内存地址查找出对应的内核变量名，便于对内核的调试工作。
+
+### 本章总结
+
+主要讲述了早期linux操作系统的内核模式和体系结构，并对编译文件makefile做了注释
 
 
 
