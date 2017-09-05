@@ -103,6 +103,7 @@ fs是文件系统实现程序的目录，包含17各C程序
 >> ll_rw_block   是块设备的底层读函数，它不再fs目录中，而是kernel/blk_dev/ll_rw_block.c中块设备读写驱动函数
 **文件系统对于块设备中数据读写，都需要通过高速缓冲区与块设备的驱动程序(ll_rw_block)来操作，文件系统程序集本身并不直接与块设备的驱动程序打交道**
 
+<pre>
    .------------.   .-------.        .-------.        .-------.
    | file_table |   | ioctl |        | exec  |\       | fcntl |
    '------------'   '-------'        '-|-----' \      '-------'
@@ -138,6 +139,7 @@ fs是文件系统实现程序的目录，包含17各C程序
                          .-----v-------.
                          | ll_rw_block |
                          '-------------'
+</pre>
 
 ### 头文件主目录include
 
@@ -215,6 +217,7 @@ printk,vsprintf |         | traps.c      |  fork.c,sys.c,exit.c,signal.c| v系
 
 包含4个C和一个h文件，blk.h是为块设备程序专门使用的，所以与C文件放在一起
 
+<pre>
   .-------.   .-------------.
   | blk.h |   | ll_rw_blk.c |
   '-------'   '-------------'
@@ -223,6 +226,7 @@ printk,vsprintf |         | traps.c      |  fork.c,sys.c,exit.c,signal.c| v系
            .----v-. .-v--------.
            | hd.c | | floppy.c |
            '------' '----------'
+</pre>
 
 * blk.h    定义了3个C程序中共用的块设备结构和数据块请求结构
 * hd.c     主要实现对硬盘数据块进行读写的底层驱动函数，主要是do_hd_request()
@@ -233,6 +237,7 @@ printk,vsprintf |         | traps.c      |  fork.c,sys.c,exit.c,signal.c| v系
 
 包含4个C和2各汇编文件。这些文件实现了对串口rs-232, tty, 键盘,和终端控制台设备的驱动
 
+<pre>
                    .----------.   .-------------.
                   /| tty_io.c |\  | tty_ioctl.c |
                  / '----------' \ '-------------'
@@ -244,6 +249,7 @@ printk,vsprintf |         | traps.c      |  fork.c,sys.c,exit.c,signal.c| v系
  .---------v..-------v-..--v--------..v-----------.
  | serial.c || rs_io.s || console.c || keyboard.S |
  '----------''---------''-----------''------------'
+</pre>
 
 * tty_io.c    包含对tty字符设备读函数tty_read()和写函数tty_write()，另外还包括在串行中断处理过程中调用的C函数do_tty_interrupt()，该函数会在中断类型为读字符的处理中被调用
 * console.c   主要包括控制台初始化程序和控制台写函数con_write()，用于被tty设备调用，还包括对显示器和键盘中断的初始化设置程序con_init()
